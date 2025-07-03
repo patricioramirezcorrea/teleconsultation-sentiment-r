@@ -1,9 +1,10 @@
 # --- Script Header ---
 # Project: Teleconsultation Sentiment Analysis in Chile
-# Author: Patricio Ramírez Correa 
+# Author: Patricio Ramírez Correa
 # Date: July 2, 2025
 # Description: This script processes Twitter data related to teleconsultation,
 #              filters tweets by keywords and geographical location in Chile,
+#              performs bot detection to remove likely fake accounts,
 #              performs emotion and sentiment analysis using the Syuzhet package,
 #              and operationalizes satisfaction as a binary valence variable.
 #              Finally, it prepares the data for further statistical analysis (e.g., PLS-SEM).
@@ -14,11 +15,13 @@
 # `stringr`: For string manipulation, particularly for pattern detection.
 # `xlsx`: For writing data frames to Excel files.
 # `syuzhet`: For sentiment and emotion analysis using the NRC Emotion Lexicon.
+# `TweetBotOrNot`: For detecting and filtering out bot accounts.
 library(academictwitteR)
 library(dplyr)
 library(stringr)
 library(xlsx)
 library(syuzhet)
+library(TweetBotOrNot)
 
 # --- 2. Load Tweet Data ---
 # Binds tweet data from specified JSON files into a single tidy dataframe.
@@ -26,6 +29,65 @@ library(syuzhet)
 #            For a GitHub repository, it's recommended to place raw data in a 'data/' folder
 #            relative to the script.
 tweets <- bind_tweets(data_path = "data/", output_format = "tidy")
+
+# --- 2.1. Bot Detection and Filtering ---
+# This section uses the 'TweetBotOrNot' package to identify and remove tweets
+# from accounts likely to be bots. This helps ensure the analysis is based on
+# genuine human sentiment.
+
+# IMPORTANT: To use TweetBotOrNot, you need to set up your Twitter API credentials.
+# You can typically set these as environment variables or directly within your R session.
+# Example (replace with your actual credentials):
+# Sys.setenv(
+#   "TWITTER_BEARER_TOKEN" = "YOUR_BEARER_TOKEN",
+#   "TWITTER_CONSUMER_API_KEY" = "YOUR_CONSUMER_API_KEY",
+#   "TWITTER_CONSUMER_API_SECRET" = "YOUR_CONSUMER_API_SECRET",
+#   "TWITTER_ACCESS_TOKEN" = "YOUR_ACCESS_TOKEN",
+#   "TWITTER_ACCESS_TOKEN_SECRET" = "YOUR_ACCESS_TOKEN_SECRET"
+# )
+# Ensure you have the necessary authentication set up for the TweetBotOrNot package
+# to access the Twitter API.
+
+# Get unique author IDs from the tweets to avoid redundant API calls.
+unique_author_ids <- unique(tweets$author_id)
+
+# Retrieve bot scores for each unique author ID.
+# Be aware of Twitter API rate limits. For a large number of users, this might take time.
+# The 'get_bot_scores' function queries the Twitter API for user characteristics.
+message("Fetching bot scores for unique authors. This may take some time depending on the number of unique users and API rate limits.")
+bot_scores_df <- tryCatch({
+  get_bot_scores(users = unique_author_ids, user_id = TRUE)
+}, error = function(e) {
+  message("Error fetching bot scores: ", e$message)
+  message("Proceeding without bot filtering. Please ensure Twitter API credentials are correctly set for bot detection.")
+  return(NULL) # Return NULL if there's an error, so the script can continue
+})
+
+# If bot scores were successfully retrieved, merge them and filter.
+if (!is.null(bot_scores_df) && nrow(bot_scores_df) > 0) {
+  # Rename 'user_id' to 'author_id' in bot_scores_df for merging.
+  bot_scores_df <- bot_scores_df %>% rename(author_id = user_id)
+  
+  # Merge bot scores back to the main tweets dataframe.
+  # Use left_join to keep all tweets and add bot scores where available.
+  tweets <- tweets %>%
+    left_join(bot_scores_df %>% select(author_id, prob_bot), by = "author_id")
+  
+  # Filter out tweets from likely bot accounts.
+  # A common threshold for 'prob_bot' (probability of being a bot) is > 0.5 or > 0.7.
+  # Adjust the 'bot_threshold' as per your research's sensitivity requirements.
+  bot_threshold <- 0.5 # Example threshold: remove users with >50% probability of being a bot
+  initial_tweet_count <- nrow(tweets)
+  tweets <- tweets %>%
+    filter(is.na(prob_bot) | prob_bot <= bot_threshold) # Keep if prob_bot is NA (no score) or below threshold
+  
+  message(paste0("Removed ", initial_tweet_count - nrow(tweets), " tweets identified as likely bots (prob_bot > ", bot_threshold, ")."))
+  message(paste0("Remaining tweets after bot filtering: ", nrow(tweets)))
+  
+} else {
+  message("Bot scores could not be retrieved or were empty. Skipping bot filtering.")
+}
+
 
 # --- 3. Define Keywords and Geographical Filters ---
 # `keywords`: A vector of keywords (in Spanish) related to teleconsultation.
@@ -42,8 +104,8 @@ chilean_cities <- c("valparaiso","valparaíso","viña del mar", "vina del mar", 
 # Create a single regex pattern for all Chilean cities for efficient filtering.
 city_pattern <- paste(chilean_cities, collapse = "|")
 
-# --- 4. Filter Tweets ---
-# Filters the `tweets` dataframe:
+# --- 4. Filter Tweets by Keywords and Location ---
+# Filters the `tweets` dataframe (which now may have bot scores):
 # 1. Keeps tweets where the lowercase `text` contains any of the `keywords`.
 # 2. Keeps tweets where the lowercase `user_location` contains any of the `chilean_cities`.
 filtered_tweets <- tweets %>%
@@ -110,4 +172,5 @@ if (!dir.exists("output")) {
 # `sheetName = "data"` specifies the sheet name within the Excel file.
 # `append = FALSE` ensures a new file is created or overwritten if it exists.
 write.xlsx(result_df, file = "output/tele-ciudades.xlsx", sheetName = "data", append = FALSE)
+
 # --- Script End ---
