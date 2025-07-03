@@ -4,8 +4,10 @@ This repository contains the R script and associated data for analyzing sentimen
 Project Structure
 
 R/: Contains the R script (analyze_teleconsultation_tweets.R).
+
 data/: This directory should contain the raw tweet data, typically in a format compatible with academictwitteR's bind_tweets function (e.g., JSON files). 
 Note: For initial testing and code validation, only the first 100 tweet data files have been uploaded here, not the entire dataset.
+
 output/: (Placeholder) Processed data will be saved here (e.g., tele-ciudades.xlsx).
 
 Requirements
