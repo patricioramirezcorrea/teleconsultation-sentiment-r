@@ -4,7 +4,8 @@ This repository contains the R script and associated data for analyzing sentimen
 Project Structure
 
 R/: Contains the R script (analyze_teleconsultation_tweets.R).
-data/: (Placeholder) This directory should contain the raw tweet data, typically in a format compatible with academictwitteR's bind_tweets function (e.g., JSON files).
+data/: This directory should contain the raw tweet data, typically in a format compatible with academictwitteR's bind_tweets function (e.g., JSON files). 
+Note: For initial testing and code validation, only the first 100 tweet data files have been uploaded here, not the entire dataset.
 output/: (Placeholder) Processed data will be saved here (e.g., tele-ciudades.xlsx).
 
 Requirements
@@ -26,4 +27,3 @@ Script Overview
 5. Applies the NRC Emotion Lexicon (via syuzhet package) to extract eight basic emotions (anger, anticipation, disgust, fear, joy, sadness, surprise, trust) and sentiment scores (positive/negative) for each tweet.
 6. Operationalizes 'satisfaction' as a binary valence variable: 1 if positive emotions outweigh negative emotions, 0 otherwise.
 7. Saves the augmented dataset, including emotion scores and satisfaction variable, to an Excel file.
-   
