@@ -12,7 +12,7 @@ output/: (Placeholder) Processed data will be saved here (e.g., tele-ciudades.xl
 
 Requirements
 R (version 4.0 or higher recommended)
-R packages: academictwitteR, dplyr, stringr, xlsx, syuzhet
+R packages: academictwitteR, dplyr, stringr, xlsx, syuzhet,TweetBotOrNot
 
 Run the R script:
 source("R/analyze_teleconsultation_tweets.R")
@@ -21,11 +21,11 @@ The script will output an Excel file named tele-ciudades.xlsx in your working di
 
 Script Overview
 
-0. Loads necessary R libraries.
-1. Binds raw tweet data files into a single dataframe.
-2. Defines keywords related to teleconsultation and a list of Chilean cities.
-3. Filters tweets based on the presence of keywords in the tweet text and city names in the user's location.
-4. Categorizes filtered tweets into three geographical groups based on user_location.
-5. Applies the NRC Emotion Lexicon (via syuzhet package) to extract eight basic emotions (anger, anticipation, disgust, fear, joy, sadness, surprise, trust) and sentiment scores (positive/negative) for each tweet.
-6. Operationalizes 'satisfaction' as a binary valence variable: 1 if positive emotions outweigh negative emotions, 0 otherwise.
-7. Saves the augmented dataset, including emotion scores and satisfaction variable, to an Excel file.
+1. Loads necessary R libraries.
+2. Binds raw tweet data files into a single dataframe (remove tweets from accounts likely to be bots).
+3. Defines keywords related to teleconsultation and a list of Chilean cities.
+4. Filters tweets based on the presence of keywords in the tweet text and city names in the user's location.
+5. Categorizes filtered tweets into three geographical groups based on user_location.
+6. Applies the NRC Emotion Lexicon (via syuzhet package) to extract eight basic emotions (anger, anticipation, disgust, fear, joy, sadness, surprise, trust) and sentiment scores (positive/negative) for each tweet.
+7. Operationalizes 'satisfaction' as a binary valence variable: 1 if positive emotions outweigh negative emotions, 0 otherwise.
+8. Saves the augmented dataset, including emotion scores and satisfaction variable, to an Excel file.
